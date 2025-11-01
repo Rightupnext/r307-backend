@@ -1,66 +1,50 @@
-from mongoengine import Document, StringField, DateTimeField, IntField
 import datetime
+from mongoengine import Document, StringField, IntField, DateTimeField
 
 class User(Document):
-
-    # Finger Template
-    finger_Template_id = StringField()
-    finger_Template_id_2 = StringField()
-
-    # Basic Details
-    rollNo = StringField()
-    chestNo = StringField()
-    firstName = StringField(required=True, max_length=100)
-    lastName = StringField()
+    # Personal details
+    firstName = StringField()
     middleName = StringField()
+    lastName = StringField()
     fatherName = StringField()
-    dateOfBirth = DateTimeField()
-
-    # Contact
+    chestNo = StringField()
+    rollNo = StringField()
     email = StringField()
     mobileNumber = StringField()
-    aadharNumber = StringField(max_length=16)
-    address = StringField()
-    pincode = StringField()
-
-    # Education & Trade
     eduQualification = StringField()
-    trade = StringField()
-    centerName = StringField()
-
-    # Location
+    aadharNumber = StringField()
+    identificationMarks_1 = StringField()
+    identificationMarks_2 = StringField()
     village = StringField()
     post = StringField()
     tehsil = StringField()
     district = StringField()
     state = StringField()
-    police_station = StringField()
+    pincode = StringField()
 
-    # Identification
-    identificationMarks_1 = StringField()
-    identificationMarks_2 = StringField()
-    photo = StringField()
-
-    # Physical Test
-    height = IntField()
-    weight = IntField()
+    # Physical details
+    height = StringField()
+    weight = StringField()
     chest = StringField()
+
     run = StringField()
-    pullUp = IntField()
+    pullUp = StringField()
     balance = StringField()
     ditch = StringField()
     medical = StringField()
+    tradeTest = StringField()
 
-    # Marks
-    tradeTest = IntField()
-    totalPhysical = IntField()
-    totalMarks = IntField()
+    # Scoring
+    centerName = StringField()
+    totalPhysical = StringField()
+    totalMarks = StringField()
 
-    # Extra
-    remarks = StringField()
-    exam_centre = StringField()
-    mod_status = StringField()
+    # Files
+    photo = StringField()
+    finger_Template_id = StringField()
+    finger_Template_id_2 = StringField()
 
     # System fields
     created_at = DateTimeField(default=datetime.datetime.utcnow)
     updated_at = DateTimeField(default=datetime.datetime.utcnow)
+

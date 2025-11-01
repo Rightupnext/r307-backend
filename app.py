@@ -1,3 +1,4 @@
+
 from flask import Flask
 from flask_cors import CORS
 from config.db import init_db
@@ -5,11 +6,23 @@ from routes.user_routes import user_bp
 
 app = Flask(__name__)
 
-# ? Enable CORS for all routes
-CORS(app)  # Allow all origins
+# ? Allow CORS from Vite Dev, Electron, LAN clients
+CORS(app, resources={r"/*": {"origins": [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost",
+    "http://127.0.0.1",
+    "http://192.168.1.*"   # LAN network
+]}})
 
+@app.after_request
+def after_request(response):
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
+    response.headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+    return response
 
-# ? DB Connection
+# ? DB Init
 init_db()
 
 # ? Routes
@@ -21,4 +34,3 @@ def home():
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
-
