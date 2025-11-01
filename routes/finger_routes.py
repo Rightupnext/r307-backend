@@ -41,30 +41,56 @@ def verify_finger():
         if not match:
             return jsonify({"match": False, "message": "No match found!"}), 404
 
+        # Convert Mongo user to JSON-like dict (exclude binary fingerprints)
+        user_data = {
+            "id": str(user.id),
+            "firstName": user.firstName,
+            "middleName": user.middleName,
+            "lastName": user.lastName,
+            "fatherName": user.fatherName,
+            "chestNo": user.chestNo,
+            "rollNo": user.rollNo,
+            "email": user.email,
+            "dateOfBirth": user.dateOfBirth.isoformat() if user.dateOfBirth else None,
+            "mobileNumber": user.mobileNumber,
+            "eduQualification": user.eduQualification,
+            "aadharNumber": user.aadharNumber,
+            "identificationMarks_1": user.identificationMarks_1,
+            "identificationMarks_2": user.identificationMarks_2,
+            "village": user.village,
+            "post": user.post,
+            "tehsil": user.tehsil,
+            "district": user.district,
+            "state": user.state,
+            "pincode": user.pincode,
+            "police_station": user.police_station,
+            "trade": user.trade,
+            "height": user.height,
+            "weight": user.weight,
+            "chest": user.chest,
+            "run": user.run,
+            "pullUp": user.pullUp,
+            "balance": user.balance,
+            "ditch": user.ditch,
+            "medical": user.medical,
+            "tradeTest": user.tradeTest,
+            "centerName": user.centerName,
+            "totalPhysical": user.totalPhysical,
+            "totalMarks": user.totalMarks,
+            "photo": user.photo,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "updated_at": user.updated_at.isoformat() if user.updated_at else None
+        }
+
         return jsonify({
             "match": True,
             "message": "Fingerprint Matched ?",
-            "user": {
-                "id": str(user.id),
-                "firstName": user.firstName,
-                "middleName": user.middleName,
-                "lastName": user.lastName,
-                "fatherName": user.fatherName,
-                "rollNo": user.rollNo,
-                "chestNo": user.chestNo,
-                "mobileNumber": user.mobileNumber,
-                "village": user.village,
-                "district": user.district,
-                "state": user.state,
-                "centerName": user.centerName,
-                "totalPhysical": user.totalPhysical,
-                "totalMarks": user.totalMarks,
-                "photo": user.photo
-            }
+            "user": user_data
         }), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 # ? STOP/RESET Scanner
 @finger_bp.route("/scanner/stop", methods=["POST"])
 def stop_scan():

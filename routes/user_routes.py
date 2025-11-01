@@ -17,7 +17,7 @@ def get_users_route():
 def get_user_route(id):
     return get_user(id)
 
-@user_bp.route("/<id>", methods=["PUT"])
+@user_bp.route("/update/<id>", methods=["PUT"])
 def update_user_route(id):
     return update_user(id)
 

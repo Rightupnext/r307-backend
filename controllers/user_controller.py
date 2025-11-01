@@ -2,6 +2,7 @@ from flask import request, jsonify, Response
 from models.user import User
 import os, datetime, pytz
 import base64
+from bson import ObjectId
 
 # Folder paths
 BASE_DIR = "/home/siva"
@@ -57,6 +58,8 @@ def create_user():
             aadharNumber=data.get("aadharNumber"),
             identificationMarks_1=data.get("identificationMarks_1"),
             identificationMarks_2=data.get("identificationMarks_2"),
+            trade=data.get("trade"),
+            police_station=data.get("police_station"),
             village=data.get("village"),
             post=data.get("post"),
             tehsil=data.get("tehsil"),
@@ -93,40 +96,96 @@ def create_user():
     except Exception as e:
         print("User create error:", e)
         return jsonify({"error": str(e)}), 500
-# Get All Users
-def get_users():
+def serialize_user(user):
+    data = user.to_mongo().to_dict()
+
+    # Convert Mongo ObjectId to string
+    data["_id"] = str(data["_id"])
+
+    # Convert datetime fields
+    if "created_at" in data and data["created_at"]:
+        data["created_at"] = data["created_at"].isoformat()
+
+    if "updated_at" in data and data["updated_at"]:
+        data["updated_at"] = data["updated_at"].isoformat()
+
+    # Convert Binary fingerprint fields ? base64 string
+    if "finger1" in data and data["finger1"]:
+        data["finger1"] = base64.b64encode(data["finger1"]).decode()
+
+    if "finger2" in data and data["finger2"]:
+        data["finger2"] = base64.b64encode(data["finger2"]).decode()
+
+    return data
+
+
+def get_user(id):
     try:
-        users = User.objects().to_json()
-        return Response(users, mimetype="application/json", status=200)
+        user = User.objects.get(id=id)
+        return jsonify({"user": serialize_user(user)}), 200
+    except User.DoesNotExist:
+        return jsonify({"error": "User not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
 
-# Get Single User
-def get_user(id):
+def get_users():
     try:
-        user = User.objects.get(id=id)
-        return Response(user.to_json(), mimetype="application/json", status=200)
-    except User.DoesNotExist:
-        return jsonify({"error": "User not found"}), 404
+        users = [serialize_user(u) for u in User.objects()]
+        return jsonify(users), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
 
 # Update User (partial update allowed)
+# Update User (correct fingerprint update)
 def update_user(id):
     try:
-        data = request.form.to_dict() if request.form else request.json
+        user = User.objects.get(id=id)
 
-        # Update timestamp
-        data["updated_at"] = datetime.datetime.utcnow()
+        data = request.form
 
-        User.objects.get(id=id).update(**data)
-        return jsonify({"message": "User updated successfully"})
+        photo_file = request.files.get("photo")
+        finger1_b64 = data.get("finger1")
+        finger2_b64 = data.get("finger2")
+
+        update_data = {}
+
+        # ? Normal text fields update
+        for key, value in data.items():
+            if key not in ["finger1", "finger2"]:  # avoid overwrite raw binary
+                update_data[key] = value
+
+        # ? Fingerprint update ONLY if new scanned
+        if finger1_b64:
+            update_data["finger1"] = base64.b64decode(finger1_b64)
+
+        if finger2_b64:
+            update_data["finger2"] = base64.b64decode(finger2_b64)
+
+        # ? Photo update only if new photo uploaded
+        if photo_file:
+            photo_name = f"{user.rollNo}_photo.jpg"
+            photo_file.save(os.path.join(UPLOAD_PHOTO_DIR, photo_name))
+            update_data["photo"] = photo_name
+
+        # ? Update timestamp
+        update_data["updated_at"] = datetime.datetime.utcnow()
+
+        User.objects(id=id).update(**update_data)
+
+        return jsonify({
+            "message": "User updated successfully",
+            "updatedFields": list(update_data.keys())
+        }), 200
+
     except User.DoesNotExist:
         return jsonify({"error": "User not found"}), 404
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        print("Update error:", e)
+        return jsonify({"error": str(e)}), 500
+
 
 
 # Delete User

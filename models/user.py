@@ -10,6 +10,7 @@ class User(Document):
     chestNo = StringField()
     rollNo = StringField()
     email = StringField()
+    dateOfBirth = DateTimeField()
     mobileNumber = StringField()
     eduQualification = StringField()
     aadharNumber = StringField()
@@ -21,6 +22,8 @@ class User(Document):
     district = StringField()
     state = StringField()
     pincode = StringField()
+    trade = StringField()
+    police_station = StringField()
 
     # Physical details
     height = StringField()
