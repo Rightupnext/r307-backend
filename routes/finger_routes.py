@@ -3,24 +3,33 @@ from controllers.fingerprint_controller import capture_finger_template, verify_f
 
 finger_bp = Blueprint('finger_bp', __name__)
 
-# ? Capture Finger Template 1
 @finger_bp.route("/capture/finger1", methods=["GET"])
 def finger1():
     try:
-        data = capture_finger_template()
+        data = capture_finger_template(min_quality=60)
+
+        if data["status"] == "low_quality":
+            return jsonify(data), 400  # Bad Request � ask user to retry
+
         return jsonify({"finger1": data}), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-# ? Capture Finger Template 2
 @finger_bp.route("/capture/finger2", methods=["GET"])
 def finger2():
     try:
-        data = capture_finger_template()
+        data = capture_finger_template(min_quality=60)
+
+        if data["status"] == "low_quality":
+            return jsonify(data), 400
+
         return jsonify({"finger2": data}), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 # ? Verify Fingerprint
