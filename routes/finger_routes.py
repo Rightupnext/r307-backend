@@ -1,98 +1,99 @@
-from flask import Blueprint, jsonify
-from controllers.fingerprint_controller import capture_finger_template, verify_fingerprint,stop_fingerprint_scan
+# routes/fingerprint_routes.py
+from flask import Blueprint, jsonify, request
+from controllers.fingerprint_controller import enroll_fingerprint, verify_fingerprint, stop_fingerprint_scan
+from models.user import User
+from utils.sensor_manager import sensor_manager
+from utils.enroll_session import enroll_session
 
-finger_bp = Blueprint('finger_bp', __name__)
+finger_bp = Blueprint('finger_bp', __name__, url_prefix="/finger")
 
-@finger_bp.route("/capture/finger1", methods=["GET"])
-def finger1():
-    try:
-        data = capture_finger_template(min_quality=60)
+def _get_port():
+    pid = request.args.get("port", default=0, type=int)
+    return f"/dev/ttyUSB{pid}"
 
-        if data["status"] == "low_quality":
-            return jsonify(data), 400  # Bad Request � ask user to retry
+### ? ENROLL FINGER 1 � create new user globally
+@finger_bp.route("/enroll/finger1", methods=["POST"])
+def enroll_finger1():
+    port = _get_port()
+    sensor_manager.register_port(port)
 
-        return jsonify({"finger1": data}), 200
+    result = enroll_fingerprint(port)
+    if result.get("status") != "success":
+        return jsonify(result), 400
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    # create new user
+    user = User()
+    user.finger1 = result["template"]
+    user.save()
 
+    # store enroll session for this port
+    enroll_session[port] = str(user.id)
 
-@finger_bp.route("/capture/finger2", methods=["GET"])
-def finger2():
-    try:
-        data = capture_finger_template(min_quality=60)
-
-        if data["status"] == "low_quality":
-            return jsonify(data), 400
-
-        return jsonify({"finger2": data}), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
+    return jsonify({
+        "message": "Finger 1 stored successfully!",
+        "person_id": str(user.id),
+        "port": port
+    }), 200
 
 
-# ? Verify Fingerprint
-@finger_bp.route("/verify/finger", methods=["GET"])
-def verify_finger():
-    try:
-        match, user = verify_fingerprint()
+### ? ENROLL FINGER 2 � attach to same user
+@finger_bp.route("/enroll/finger2", methods=["POST"])
+def enroll_finger2():
+    port = _get_port()
+    sensor_manager.register_port(port)
 
-        if not match:
-            return jsonify({"match": False, "message": "No match found!"}), 404
+    if port not in enroll_session:
+        return jsonify({"error": "Finger1 not enrolled, session not found", "port": port}), 400
 
-        # Convert Mongo user to JSON-like dict (exclude binary fingerprints)
-        user_data = {
+    user_id = enroll_session[port]
+    user = User.objects.get(id=user_id)
+
+    result = enroll_fingerprint(port)
+    if result.get("status") != "success":
+        return jsonify(result), 400
+
+    user.finger2 = result["template"]
+    user.save()
+
+    # clear session
+    enroll_session.pop(port, None)
+
+    return jsonify({
+        "message": "Finger 2 stored successfully!",
+        "person_id": str(user.id),
+        "port": port
+    }), 200
+
+
+### ? VERIFY FINGERPRINT � global match
+@finger_bp.route("/verify", methods=["GET"])
+def verify_finger_route():
+    port = _get_port()
+    sensor_manager.register_port(port)
+
+    match, user, score = verify_fingerprint(port)
+
+    if not match:
+        return jsonify({"match": False, "message": "No match found", "port": port}), 404
+
+    return jsonify({
+        "match": True,
+        "message": "Fingerprint Matched",
+        "port": port,
+        "score": score,
+        "user": {
             "id": str(user.id),
-            "firstName": user.firstName,
-            "middleName": user.middleName,
-            "lastName": user.lastName,
-            "fatherName": user.fatherName,
-            "chestNo": user.chestNo,
-            "rollNo": user.rollNo,
-            "email": user.email,
-            "dateOfBirth": user.dateOfBirth.isoformat() if user.dateOfBirth else None,
-            "mobileNumber": user.mobileNumber,
-            "eduQualification": user.eduQualification,
-            "aadharNumber": user.aadharNumber,
-            "identificationMarks_1": user.identificationMarks_1,
-            "identificationMarks_2": user.identificationMarks_2,
-            "village": user.village,
-            "post": user.post,
-            "tehsil": user.tehsil,
-            "district": user.district,
-            "state": user.state,
-            "pincode": user.pincode,
-            "police_station": user.police_station,
-            "trade": user.trade,
-            "height": user.height,
-            "weight": user.weight,
-            "chest": user.chest,
-            "run": user.run,
-            "pullUp": user.pullUp,
-            "balance": user.balance,
-            "ditch": user.ditch,
-            "medical": user.medical,
-            "tradeTest": user.tradeTest,
-            "centerName": user.centerName,
-            "totalPhysical": user.totalPhysical,
-            "totalMarks": user.totalMarks,
-            "photo": user.photo,
-            "created_at": user.created_at.isoformat() if user.created_at else None,
-            "updated_at": user.updated_at.isoformat() if user.updated_at else None
+            "firstName": getattr(user, "firstName", None),
+            "chestNo": getattr(user, "chestNo", None),
+            "rollNo": getattr(user, "rollNo", None),
         }
+    }), 200
 
-        return jsonify({
-            "match": True,
-            "message": "Fingerprint Matched ?",
-            "user": user_data
-        }), 200
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# ? STOP/RESET Scanner
+### ? STOP SCAN
 @finger_bp.route("/scanner/stop", methods=["POST"])
 def stop_scan():
-    stop_fingerprint_scan()
-    return jsonify({"status": "OK", "message": "Scanner stopped/reset ?"})
+    port = _get_port()
+    sensor_manager.register_port(port)
+    stop_fingerprint_scan(port)
+    return jsonify({"status": "OK", "message": "Scanner stop attempted", "port": port}), 200

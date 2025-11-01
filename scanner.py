@@ -7,7 +7,7 @@ os.makedirs(SAVE_PATH, exist_ok=True)
 
 def init_sensor():
     try:
-        f = PyFingerprint('/dev/serial0', 57600, 0xFFFFFFFF, 0x00000000)
+        f = PyFingerprint('/dev/ttyUSB0', 57600, 0xFFFFFFFF, 0x00000000)
 
         if not f.verifyPassword():
             raise ValueError("Sensor password wrong")
