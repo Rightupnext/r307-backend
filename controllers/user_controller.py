@@ -1,6 +1,7 @@
 from flask import request, jsonify, Response
 from models.user import User
 import os, datetime, pytz
+import base64
 
 # Folder paths
 BASE_DIR = "/home/siva"
@@ -18,34 +19,31 @@ def create_user():
             return jsonify({"error": "User limit reached (20)."}), 403
 
         data = request.form
+
         photo_file = request.files.get("photo")
-        finger1_file = request.files.get("finger1")
-        finger2_file = request.files.get("finger2")
 
-        photo_name = None
-        finger1_name = None
-        finger2_name = None
+        # ? Finger Data from Frontend (Base64 Text)
+        finger1_b64 = data.get("finger1")
+        finger2_b64 = data.get("finger2")
 
+        # ? Convert Base64 ? Binary (None safe)
+        finger1_bin = base64.b64decode(finger1_b64) if finger1_b64 else None
+        finger2_bin = base64.b64decode(finger2_b64) if finger2_b64 else None
+
+        # RollNo auto generate if not given
         roll = data.get("rollNo") or str(datetime.datetime.utcnow().timestamp())
 
-        # Photo Save
+        # ? Save Photo (still file)
+        photo_name = None
         if photo_file:
             photo_name = f"{roll}_photo.jpg"
             photo_file.save(os.path.join(UPLOAD_PHOTO_DIR, photo_name))
 
-        # Fingerprint 1 Save
-        if finger1_file:
-            finger1_name = f"{roll}_finger1.bin"
-            finger1_file.save(os.path.join(UPLOAD_FINGER_DIR, finger1_name))
-
-        # Fingerprint 2 Save
-        if finger2_file:
-            finger2_name = f"{roll}_finger2.bin"
-            finger2_file.save(os.path.join(UPLOAD_FINGER_DIR, finger2_name))
-
+        # ? Timezone
         ist = pytz.timezone("Asia/Kolkata")
         now = datetime.datetime.now(ist)
 
+        # ? Save MongoDB Document
         user = User(
             firstName=data.get("firstName"),
             middleName=data.get("middleName"),
@@ -77,9 +75,13 @@ def create_user():
             centerName=data.get("centerName"),
             totalPhysical=data.get("totalPhysical"),
             totalMarks=data.get("totalMarks"),
+
             photo=photo_name,
-            finger_Template_id=finger1_name,
-            finger_Template_id_2=finger2_name,
+
+            # ? Direct Binary Save
+            finger1=finger1_bin,
+            finger2=finger2_bin,
+
             created_at=now,
             updated_at=now
         )
@@ -91,8 +93,6 @@ def create_user():
     except Exception as e:
         print("User create error:", e)
         return jsonify({"error": str(e)}), 500
-
-
 # Get All Users
 def get_users():
     try:

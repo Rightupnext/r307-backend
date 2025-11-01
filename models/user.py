@@ -1,5 +1,5 @@
 import datetime
-from mongoengine import Document, StringField, IntField, DateTimeField
+from mongoengine import Document, StringField, IntField, DateTimeField,BinaryField 
 
 class User(Document):
     # Personal details
@@ -43,6 +43,8 @@ class User(Document):
     photo = StringField()
     finger_Template_id = StringField()
     finger_Template_id_2 = StringField()
+    finger1 = BinaryField()
+    finger2 = BinaryField()
 
     # System fields
     created_at = DateTimeField(default=datetime.datetime.utcnow)

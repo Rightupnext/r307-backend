@@ -1,9 +1,9 @@
 
-from flask import Flask
+from flask import Flask,send_from_directory
 from flask_cors import CORS
 from config.db import init_db
 from routes.user_routes import user_bp
-
+from routes.finger_routes import finger_bp
 app = Flask(__name__)
 
 # ? Allow CORS from Vite Dev, Electron, LAN clients
@@ -28,9 +28,16 @@ init_db()
 # ? Routes
 app.register_blueprint(user_bp, url_prefix="/api/users")
 
+app.register_blueprint(finger_bp, url_prefix="/api/finger")
+
 @app.route("/")
 def home():
     return {"msg": "Army Recruitment API Running ?"}
+# Serve photos
+@app.route('/photos/<filename>')
+def get_photo(filename):
+    return send_from_directory('/home/siva/photos', filename)
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
