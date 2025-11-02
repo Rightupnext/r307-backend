@@ -1,6 +1,6 @@
 from flask import request, jsonify, Response
 from models.user import User
-import os, datetime, pytz
+import os, base64, datetime, pytz, time
 import base64
 from bson import ObjectId
 
@@ -12,90 +12,87 @@ UPLOAD_FINGER_DIR = os.path.join(BASE_DIR, "fingerprint")
 os.makedirs(UPLOAD_PHOTO_DIR, exist_ok=True)
 os.makedirs(UPLOAD_FINGER_DIR, exist_ok=True)
 
-# Create User
 def create_user():
     try:
-        # Limit users (optional)
-        if User.objects.count() >= 20:
-            return jsonify({"error": "User limit reached (20)."}), 403
+        # ? Optional user limit remove if not needed
+        # if User.objects.count() >= 20:
+        #     return jsonify({"error": "User limit reached (20)"}), 403
 
         data = request.form
-
         photo_file = request.files.get("photo")
 
-        # ? Finger Data from Frontend (Base64 Text)
+        # ? Fingerprints (optional base64)
         finger1_b64 = data.get("finger1")
         finger2_b64 = data.get("finger2")
 
-        # ? Convert Base64 ? Binary (None safe)
         finger1_bin = base64.b64decode(finger1_b64) if finger1_b64 else None
         finger2_bin = base64.b64decode(finger2_b64) if finger2_b64 else None
 
-        # RollNo auto generate if not given
-        roll = data.get("rollNo") or str(datetime.datetime.utcnow().timestamp())
+        # ? rollNo optional
+        roll = data.get("rollNo") or ""
 
-        # ? Save Photo (still file)
+        # ? Save photo (optional)
         photo_name = None
         if photo_file:
-            photo_name = f"{roll}_photo.jpg"
+            file_prefix = roll if roll else str(int(time.time()))
+            photo_name = f"{file_prefix}_photo.jpg"
             photo_file.save(os.path.join(UPLOAD_PHOTO_DIR, photo_name))
 
         # ? Timezone
         ist = pytz.timezone("Asia/Kolkata")
         now = datetime.datetime.now(ist)
 
-        # ? Save MongoDB Document
+        # ? Create user (all fields optional)
         user = User(
-            firstName=data.get("firstName"),
-            middleName=data.get("middleName"),
-            lastName=data.get("lastName"),
-            fatherName=data.get("fatherName"),
-            chestNo=data.get("chestNo"),
+            firstName=data.get("firstName") or "",
+            middleName=data.get("middleName") or "",
+            lastName=data.get("lastName") or "",
+            fatherName=data.get("fatherName") or "",
+            chestNo=data.get("chestNo") or "",
             rollNo=roll,
-            email=data.get("email"),
-            mobileNumber=data.get("mobileNumber"),
-            eduQualification=data.get("eduQualification"),
-            aadharNumber=data.get("aadharNumber"),
-            identificationMarks_1=data.get("identificationMarks_1"),
-            identificationMarks_2=data.get("identificationMarks_2"),
-            trade=data.get("trade"),
-            police_station=data.get("police_station"),
-            village=data.get("village"),
-            post=data.get("post"),
-            tehsil=data.get("tehsil"),
-            district=data.get("district"),
-            state=data.get("state"),
-            pincode=data.get("pincode"),
-            height=data.get("height"),
-            weight=data.get("weight"),
-            chest=data.get("chest"),
-            run=data.get("run"),
-            pullUp=data.get("pullUp"),
-            balance=data.get("balance"),
-            ditch=data.get("ditch"),
-            medical=data.get("medical"),
-            tradeTest=data.get("tradeTest"),
-            centerName=data.get("centerName"),
-            totalPhysical=data.get("totalPhysical"),
-            totalMarks=data.get("totalMarks"),
-
+            email=data.get("email") or "",
+            age=data.get("age") or "",
+            dateOfBirth=data.get("dateOfBirth") or None,
+            mobileNumber=data.get("mobileNumber") or "",
+            mobileNumber2=data.get("mobileNumber2") or "",
+            eduQualification=data.get("eduQualification") or "",
+            aadharNumber=data.get("aadharNumber") or "",
+            identificationMarks_1=data.get("identificationMarks_1") or "",
+            identificationMarks_2=data.get("identificationMarks_2") or "",
+            village=data.get("village") or "",
+            post=data.get("post") or "",
+            tehsil=data.get("tehsil") or "",
+            district=data.get("district") or "",
+            state=data.get("state") or "",
+            pincode=data.get("pincode") or "",
+            trade=data.get("trade") or "",
+            police_station=data.get("police_station") or "",
+            height=data.get("height") or "",
+            weight=data.get("weight") or "",
+            chest=data.get("chest") or "",
+            run=data.get("run") or "",
+            pullUp=data.get("pullUp") or "",
+            balance=data.get("balance") or "",
+            ditch=data.get("ditch") or "",
+            medical=data.get("medical") or "",
+            tradeTest=data.get("tradeTest") or "",
+            centerName=data.get("centerName") or "",
+            totalPhysical=data.get("totalPhysical") or "",
+            totalMarks=data.get("totalMarks") or "",
             photo=photo_name,
-
-            # ? Direct Binary Save
             finger1=finger1_bin,
             finger2=finger2_bin,
-
             created_at=now,
             updated_at=now
         )
 
         user.save()
-
         return jsonify({"message": "User created successfully", "id": str(user.id)}), 201
 
     except Exception as e:
         print("User create error:", e)
         return jsonify({"error": str(e)}), 500
+
 def serialize_user(user):
     data = user.to_mongo().to_dict()
 
@@ -137,7 +134,7 @@ def get_users():
         return jsonify({"error": str(e)}), 400
 
 
-# Update User (partial update allowed)
+
 # Update User (correct fingerprint update)
 def update_user(id):
     try:

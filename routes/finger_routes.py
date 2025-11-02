@@ -61,16 +61,69 @@ def verify_route():
     if not match:
         return jsonify({"match": False, "message": "No match"}), 404
 
+    # ? Reload full user from DB by ID
+    user = User.objects.get(id=user.id)
+
     return jsonify({
         "match": True,
         "score": score,
         "user": {
             "id": str(user.id),
+
+            # Personal details
             "firstName": user.firstName,
-            "rollNo": user.rollNo,
+            "middleName": user.middleName,
+            "lastName": user.lastName,
+            "fatherName": user.fatherName,
             "chestNo": user.chestNo,
+            "rollNo": user.rollNo,
+            "email": user.email,
+            "dateOfBirth": user.dateOfBirth.isoformat() if user.dateOfBirth else None,
+            "age": user.age,
+            "mobileNumber": user.mobileNumber,
+            "mobileNumber2": user.mobileNumber2,
+            "eduQualification": user.eduQualification,
+            "aadharNumber": user.aadharNumber,
+            "identificationMarks_1": user.identificationMarks_1,
+            "identificationMarks_2": user.identificationMarks_2,
+            "village": user.village,
+            "post": user.post,
+            "tehsil": user.tehsil,
+            "district": user.district,
+            "state": user.state,
+            "pincode": user.pincode,
+            "trade": user.trade,
+            "police_station": user.police_station,
+
+            # Physical details
+            "height": user.height,
+            "weight": user.weight,
+            "chest": user.chest,
+            "run": user.run,
+            "pullUp": user.pullUp,
+            "balance": user.balance,
+            "ditch": user.ditch,
+            "medical": user.medical,
+            "tradeTest": user.tradeTest,
+
+            # Scoring
+            "centerName": user.centerName,
+            "totalPhysical": user.totalPhysical,
+            "totalMarks": user.totalMarks,
+
+            # Files
+            "photo": user.photo,
+
+            # Fingerprint flags (safe)
+            "finger1": True if user.finger1 else False,
+            "finger2": True if user.finger2 else False,
+
+            # System
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "updated_at": user.updated_at.isoformat() if user.updated_at else None
         }
     })
+
 
 
 @finger_bp.route("/scanner/stop", methods=["POST"])
