@@ -44,8 +44,8 @@ class User(Document):
 
     # Files
     photo = StringField()
-    finger_Template_id = StringField()
-    finger_Template_id_2 = StringField()
+    # finger_Template_id = StringField()
+    # finger_Template_id_2 = StringField()
     finger1 = BinaryField()
     finger2 = BinaryField()
 

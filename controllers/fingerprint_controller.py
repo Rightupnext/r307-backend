@@ -1,159 +1,118 @@
-# controllers/fingerprint_controller.py
-import time
+import time, base64
 from models.user import User
-from utils.sensor_manager import get_sensor, init_sensor, stop_sensor
+from utils.sensor_manager import get_sensor, stop_sensor
 
-# tunables
-READ_POLL_INTERVAL = 0.08  # seconds between readImage polls
+READ_POLL_INTERVAL = 0.08
 MIN_COMPARE_SCORE_ENROLL = 50
 MIN_COMPARE_SCORE_VERIFY = 60
 
+
 def _wait_for_image(sensor, timeout=None):
-    """
-    Wait until sensor.readImage() returns True.
-    If timeout is None, waits indefinitely. Returns True if image read, False if timed out.
-    """
     start = time.time()
     while True:
         try:
             if sensor.readImage():
                 return True
-        except Exception:
-            # sometimes readImage raises when connection is flaky
+        except:
             return False
 
         time.sleep(READ_POLL_INTERVAL)
-        if timeout is not None and (time.time() - start) >= timeout:
+        if timeout and time.time() - start >= timeout:
             return False
 
-def enroll_fingerprint(port, read_timeout=20):
-    """
-    Enroll fingerprint on given port. Returns dict:
-      {"status": "success", "template": bytes([...])} or
-      {"status": "error", "message": "..."}
-    """
+
+def enroll_fingerprint(port, timeout=20):
     try:
         sensor, lock = get_sensor(port)
     except Exception as e:
-        return {"status": "error", "message": f"Could not initialize sensor: {e}"}
+        return {"status": "error", "message": f"Sensor init failed: {e}"}
 
     with lock:
-        # 1st scan
-        if not _wait_for_image(sensor, timeout=read_timeout):
-            return {"status": "error", "message": "Timeout waiting for first scan"}
+        if not _wait_for_image(sensor, timeout):
+            return {"status": "error", "message": "Timeout waiting for finger"}
 
         sensor.convertImage(0x01)
+        time.sleep(0.3)
 
-        time.sleep(0.3)  # short settle
-
-        # 2nd scan (for match)
-        if not _wait_for_image(sensor, timeout=read_timeout):
-            return {"status": "error", "message": "Timeout waiting for second scan"}
+        if not _wait_for_image(sensor, timeout):
+            return {"status": "error", "message": "Timeout second scan"}
 
         sensor.convertImage(0x02)
 
         try:
             score = sensor.compareCharacteristics()
-        except Exception as e:
-            return {"status": "error", "message": f"Failed to compare characteristics: {e}"}
+        except:
+            return {"status": "error", "message": "Compare failed"}
 
         if score < MIN_COMPARE_SCORE_ENROLL:
-            return {"status": "error", "message": f"Two scans mismatch (score={score})"}
+            return {"status": "error", "message": f"Mismatch score={score}"}
 
+        sensor.createTemplate()
+        chars = sensor.downloadCharacteristics()
+
+        # Convert fingerprint to bytes
         try:
-            sensor.createTemplate()
-            characteristics = sensor.downloadCharacteristics()  # list of ints
-        except Exception as e:
-            return {"status": "error", "message": f"Failed to create/download template: {e}"}
+            template_bytes = bytes(chars)
+        except:
+            template_bytes = bytes([int(x) & 0xFF for x in chars])
 
-        # convert to bytes for storage (common pattern). DB field should accept binary.
-        try:
-            template_bytes = bytes(characteristics)
-        except Exception:
-            # characteristics may already be bytes or other type
-            if isinstance(characteristics, (bytes, bytearray)):
-                template_bytes = bytes(characteristics)
-            else:
-                # fallback: convert each item to int then bytes
-                template_bytes = bytes(int(x) & 0xFF for x in characteristics)
+        # ? Convert to Base64 to send to frontend safely
+        base64_template = base64.b64encode(template_bytes).decode()
 
-        return {"status": "success", "template": template_bytes}
+        return {"status": "success", "template_bytes": template_bytes, "template_b64": base64_template}
+        
 
-def _to_int_list_from_stored(data):
-    """
-    Convert stored template (bytes, bytearray, list[int]) to list[int] suitable for uploadCharacteristics.
-    """
-    if data is None:
-        return None
+def _to_list(data):
     if isinstance(data, (bytes, bytearray)):
         return list(data)
     if isinstance(data, list):
         return [int(x) & 0xFF for x in data]
-    # If DB stored as memoryview or pymongo Binary
     try:
         return list(bytes(data))
-    except Exception:
-        raise ValueError("Unsupported fingerprint data type")
+    except:
+        return None
 
-def verify_fingerprint(port, read_timeout=10):
-    """
-    Verify live finger against stored templates.
-    Returns (match_bool, user_obj_or_None, score_int)
-    """
+
+def verify_fingerprint(port, timeout=10):
     try:
         sensor, lock = get_sensor(port)
-    except Exception:
+    except:
         return False, None, 0
 
     with lock:
-        # wait for user to place finger
-        if not _wait_for_image(sensor, timeout=read_timeout):
+        if not _wait_for_image(sensor, timeout):
             return False, None, 0
 
         sensor.convertImage(0x01)
-        # create template for live (slot 1)
-        try:
-            sensor.createTemplate()
-            live_chars = sensor.downloadCharacteristics()
-        except Exception:
-            return False, None, 0
+        sensor.createTemplate()
+        live = sensor.downloadCharacteristics()
 
-        # iterate over users and compare
-        users = User.objects()  # may be large - consider indexing or limiting in production
+        users = User.objects.only("firstName", "rollNo", "chestNo", "finger1", "finger2")
 
         for user in users:
-            for fp_field in ("finger1", "finger2"):
-                stored = getattr(user, fp_field, None)
+            for field in ["finger1", "finger2"]:
+                stored = getattr(user, field, None)
                 if not stored:
                     continue
 
-                try:
-                    stored_list = _to_int_list_from_stored(stored)
-                except Exception:
-                    # skip templates that can't be interpreted
+                stored_list = _to_list(stored)
+                if not stored_list:
                     continue
 
                 try:
-                    # upload live into slot 0x01 and stored into slot 0x02
-                    sensor.uploadCharacteristics(0x01, list(live_chars))
+                    sensor.uploadCharacteristics(0x01, list(live))
                     sensor.uploadCharacteristics(0x02, list(stored_list))
                     score = sensor.compareCharacteristics()
-                except Exception:
-                    # if upload/compare fails for any user/template, continue
+                except:
                     continue
 
                 if score >= MIN_COMPARE_SCORE_VERIFY:
-                    # matched
                     return True, user, score
 
         return False, None, 0
 
+
 def stop_fingerprint_scan(port):
-    """
-    Try to cancel any ongoing operation on the sensor.
-    """
-    try:
-        stop_sensor(port)
-    except Exception:
-        pass
+    try: stop_sensor(port)
+    except: pass
     return True
