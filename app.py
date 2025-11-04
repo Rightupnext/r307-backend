@@ -7,21 +7,21 @@ from routes.finger_routes import finger_bp
 app = Flask(__name__)
 
 # ? Allow CORS from Vite Dev, Electron, LAN clients
-CORS(app, resources={r"/*": {"origins": [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost",
-    "http://127.0.0.1",
-    "http://192.168.1.*"   # LAN network
-]}})
+# CORS(app, resources={r"/*": {"origins": [
+#     "http://localhost:5173",
+#     "http://127.0.0.1:5173",
+#     "http://localhost",
+#     "http://127.0.0.1",
+#     "http://192.168.1.*"   # LAN network
+# ]}})
 
-@app.after_request
-def after_request(response):
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
-    response.headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-    return response
-
+# @app.after_request
+# def after_request(response):
+#     response.headers.add("Access-Control-Allow-Origin", "*")
+#     response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
+#     response.headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+#     return response
+CORS(app)
 # ? DB Init
 init_db()
 
@@ -40,4 +40,4 @@ def get_photo(filename):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True, host="0.0.0.0", port=5001)
