@@ -126,6 +126,172 @@ assets/images/raspberrypi4_device.png
 Complete Fingerprint Connectivity Diagram:
 assets/images/fingerprint_connection_diagram.png
 ```
+Below is a complete **systemd service setup** for your Flask backend located at:
+
+```
+/home/siva/Army-backend/app.py
+```
+
+With `.env` file placed in:
+
+```
+/home/siva/Army-backend/.env
+```
+
+---
+
+## ✅ 1. Create the service file
+
+Run:
+
+```bash
+sudo nano /etc/systemd/system/army.service
+```
+
+Paste this:
+
+```ini
+[Unit]
+Description=Army Backend Service
+After=network.target
+
+[Service]
+User=siva
+WorkingDirectory=/home/siva/Army-backend
+
+# Load environment variables from .env file
+EnvironmentFile=/home/siva/Army-backend/.env
+
+# Activate your Python environment if you use one (edit the path)
+ExecStart=/home/siva/miniconda3/envs/army/bin/python app.py
+
+Restart=always
+RestartSec=5
+
+# Logging
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=army-backend
+
+[Install]
+WantedBy=multi-user.target
+```
+
+> ⚠️ **If not using Conda**, change `ExecStart` to your python path:
+
+Example for system python:
+
+```ini
+ExecStart=/usr/bin/python3 app.py
+```
+
+---
+
+## ✅ 2. Reload systemd
+
+```bash
+sudo systemctl daemon-reload
+```
+
+---
+
+## ✅ 3. Start service
+
+```bash
+sudo systemctl start army.service
+```
+
+---
+
+## ✅ 4. Enable auto-start on boot
+
+```bash
+sudo systemctl enable army.service
+```
+
+---
+
+## ✅ 5. Stop service
+
+```bash
+sudo systemctl stop army.service
+```
+
+---
+
+## ✅ 6. Restart service
+
+```bash
+sudo systemctl restart army.service
+```
+
+---
+
+## ✅ 7. Check status
+
+```bash
+sudo systemctl status army.service
+```
+
+---
+
+## ✅ 8. View logs
+
+```bash
+journalctl -u army.service -f
+```
+
+---
+
+## ⚠️ Important Notes
+
+| Thing            | Meaning                          |
+| ---------------- | -------------------------------- |
+| `.env`           | Auto-loaded into service         |
+| WorkingDirectory | must point to backend folder     |
+| ExecStart        | must point to Python interpreter |
+
+---
+
+## ✅ Test .env loaded
+
+Add inside `.env`:
+
+```
+APP_ENV=production
+```
+
+Inside `app.py` print:
+
+```python
+import os
+print("Loaded ENV:", os.getenv("APP_ENV"))
+```
+
+Run:
+
+```bash
+sudo systemctl restart army.service
+journalctl -u army.service -n 20
+```
+
+You should see:
+
+```
+Loaded ENV: production
+```
+
+---
+
+### Done 🎯
+
+Your service will now auto-start, run with `.env`, and support start/stop/restart.
+
+---
+
+### Want auto-reload when you update code?
+
+Tell me and I will give you **systemd + watchdog** or **gunicorn + flask** setup.
 
 ---
 
