@@ -111,17 +111,18 @@ POST http://192.168.1.48:5000/api/finger/verify?port=0
 Below is the hardware connection diagram for Raspberry Pi to Fingerprint Sensors:
 
 ```
-R307S Fingerprint Sensor Image:
-![R307S Scanner](assets/images/r307s_scanner.png)
+<h3>R307S Fingerprint Sensor Image:</h3>
+<img src="assets/images/r307s_scanner.png" alt="R307S Scanner" />
 
-R307S Pin Diagram:
-![R307S Module](gitimg/R307s_module.png)
+<h3>R307S Pin Diagram:</h3>
+<img src="gitimg/R307s_module.png" alt="R307S Module" />
 
-USB to TTL CP2102 Module Image:
-![CP2102 Module](gitimg/CP2102-Pinout.jpg)
+<h3>USB to TTL CP2102 Module Image:</h3>
+<img src="gitimg/CP2102-Pinout.jpg" alt="CP2102 Module" />
 
-Raspberry Pi 4 Device Image:
-![Raspberry Pi](gitimg/rasberryPi.png)
+<h3>Raspberry Pi 4 Device Image:</h3>
+<img src="gitimg/rasberryPi.png" alt="Raspberry Pi" />
+
 
 
 ```
