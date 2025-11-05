@@ -112,16 +112,17 @@ Below is the hardware connection diagram for Raspberry Pi to Fingerprint Sensors
 
 ```
 R307S Fingerprint Sensor Image:
-assets/images/r307s_scanner.png
+![R307S Scanner](assets/images/r307s_scanner.png)
 
 R307S Pin Diagram:
-gitimg/R307s_module.png
+![R307S Module](gitimg/R307s_module.png)
 
 USB to TTL CP2102 Module Image:
-gitimg/CP2102-Pinout.jpg
+![CP2102 Module](gitimg/CP2102-Pinout.jpg)
 
 Raspberry Pi 4 Device Image:
-gitimg/rasberryPi.png
+![Raspberry Pi](gitimg/rasberryPi.png)
+
 
 ```
 Below is a complete **systemd service setup** for your Flask backend located at:
