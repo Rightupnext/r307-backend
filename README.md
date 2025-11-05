@@ -115,16 +115,14 @@ R307S Fingerprint Sensor Image:
 assets/images/r307s_scanner.png
 
 R307S Pin Diagram:
-assets/images/r307s_pin_diagram.png
+gitimg/R307s_module.png
 
 USB to TTL CP2102 Module Image:
-assets/images/cp2102_module.png
+gitimg/CP2102-Pinout.jpg
 
 Raspberry Pi 4 Device Image:
-assets/images/raspberrypi4_device.png
+gitimg/rasberryPi.png
 
-Complete Fingerprint Connectivity Diagram:
-assets/images/fingerprint_connection_diagram.png
 ```
 Below is a complete **systemd service setup** for your Flask backend located at:
 
