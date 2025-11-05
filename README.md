@@ -112,10 +112,10 @@ Below is the hardware connection diagram for Raspberry Pi to Fingerprint Sensors
 
 ```
 <h3>R307S Fingerprint Sensor Image:</h3>
-<img src="./assets/r307s_scanner.png" alt="R307S Scanner" />
+<img src="./assets/r307s_module.png" alt="R307S Scanner" />
 
 <h3>R307S Pin Diagram:</h3>
-<img src="./assets/R307s_module.png" alt="R307S Module" />
+<img src="./assets/CP2102-Pinout.jpg" alt="R307S Module" />
 
 <h3>USB to TTL CP2102 Module Image:</h3>
 <img src="./assets/CP2102-Pinout.jpg" alt="CP2102 Module" />
