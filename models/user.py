@@ -4,6 +4,7 @@ from mongoengine import Document, StringField, IntField, DateTimeField,BinaryFie
 class User(Document):
     # Personal details
     firstName = StringField()
+    bioMetricID = StringField()
     middleName = StringField()
     lastName = StringField()
     fatherName = StringField()
@@ -41,6 +42,7 @@ class User(Document):
 
     # Scoring
     centerName = StringField()
+    centerCode = StringField()
     totalPhysical = StringField()
     totalMarks = StringField()
 

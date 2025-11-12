@@ -1,5 +1,6 @@
 from flask import request, jsonify, Response
 from models.user import User
+from models.counter import Counter
 import os, base64, datetime, pytz, time
 import base64
 from bson import ObjectId
@@ -11,7 +12,24 @@ UPLOAD_FINGER_DIR = os.path.join(BASE_DIR, "fingerprint")
 
 os.makedirs(UPLOAD_PHOTO_DIR, exist_ok=True)
 os.makedirs(UPLOAD_FINGER_DIR, exist_ok=True)
+# ==========================================================
+# 🔹 Generate Unique Biometric ID (TA-01, TA-02, ...)
+# ==========================================================
+def generate_biometric_id():
+    try:
+        counter = Counter.objects(key="bioMetricID").modify(
+            upsert=True,       # Create if not exist
+            new=True,          # Return updated document
+            inc__value=1       # Increment value atomically
+        )
 
+        next_num = counter.value or 1
+        return f"TA-{next_num:02d}"
+
+    except Exception as e:
+        print("Error generating biometric ID:", e)
+        return "TA-01"
+    
 def create_user():
     try:
         # ? Optional user limit remove if not needed
@@ -28,6 +46,8 @@ def create_user():
         finger1_bin = base64.b64decode(finger1_b64) if finger1_b64 else None
         finger2_bin = base64.b64decode(finger2_b64) if finger2_b64 else None
 
+        # Generate unique biometric ID
+        bio_id = generate_biometric_id()
         # ? rollNo optional
         roll = data.get("rollNo") or ""
 
@@ -44,6 +64,7 @@ def create_user():
 
         # ? Create user (all fields optional)
         user = User(
+            bioMetricID=bio_id,
             firstName=data.get("firstName") or "",
             middleName=data.get("middleName") or "",
             lastName=data.get("lastName") or "",
@@ -77,6 +98,7 @@ def create_user():
             medical=data.get("medical") or "",
             tradeTest=data.get("tradeTest") or "",
             centerName=data.get("centerName") or "",
+            centerCode=data.get("centerCode") or "",
             totalPhysical=data.get("totalPhysical") or "",
             totalMarks=data.get("totalMarks") or "",
             photo=photo_name,
@@ -87,7 +109,7 @@ def create_user():
         )
 
         user.save()
-        return jsonify({"message": "User created successfully", "id": str(user.id)}), 201
+        return jsonify({"message": "User created successfully", "id": str(user.id),"bioMetricID": bio_id}), 201
 
     except Exception as e:
         print("User create error:", e)

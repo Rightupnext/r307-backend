@@ -71,6 +71,7 @@ def verify_route():
             "id": str(user.id),
 
             # Personal details
+            "bioMetricID": user.bioMetricID,
             "firstName": user.firstName,
             "middleName": user.middleName,
             "lastName": user.lastName,
@@ -108,6 +109,7 @@ def verify_route():
 
             # Scoring
             "centerName": user.centerName,
+            "centerCode": user.centerCode,
             "totalPhysical": user.totalPhysical,
             "totalMarks": user.totalMarks,
 
@@ -132,3 +134,72 @@ def stop_scan():
     sensor_manager.register_port(port)
     stop_fingerprint_scan(port)
     return jsonify({"status": "stopped", "port": port})
+@finger_bp.route("/<user_id>", methods=["GET"])
+def get_user_by_id(user_id):
+    try:
+        # Fetch user from MongoDB
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return jsonify({"error": "User not found"}), 404
+
+    # Prepare response
+    return jsonify({
+        "match": True,
+        "user": {
+            "id": str(user.id),
+
+            # Personal details
+            "bioMetricID": user.bioMetricID,
+            "firstName": user.firstName,
+            "middleName": user.middleName,
+            "lastName": user.lastName,
+            "fatherName": user.fatherName,
+            "chestNo": user.chestNo,
+            "rollNo": user.rollNo,
+            "email": user.email,
+            "dateOfBirth": user.dateOfBirth.isoformat() if user.dateOfBirth else None,
+            "age": user.age,
+            "mobileNumber": user.mobileNumber,
+            "mobileNumber2": user.mobileNumber2,
+            "eduQualification": user.eduQualification,
+            "aadharNumber": user.aadharNumber,
+            "identificationMarks_1": user.identificationMarks_1,
+            "identificationMarks_2": user.identificationMarks_2,
+            "village": user.village,
+            "post": user.post,
+            "tehsil": user.tehsil,
+            "district": user.district,
+            "state": user.state,
+            "pincode": user.pincode,
+            "trade": user.trade,
+            "police_station": user.police_station,
+
+            # Physical details
+            "height": user.height,
+            "weight": user.weight,
+            "chest": user.chest,
+            "run": user.run,
+            "pullUp": user.pullUp,
+            "balance": user.balance,
+            "ditch": user.ditch,
+            "medical": user.medical,
+            "tradeTest": user.tradeTest,
+
+            # Scoring
+            "centerName": user.centerName,
+            "centerCode": user.centerCode,
+            "totalPhysical": user.totalPhysical,
+            "totalMarks": user.totalMarks,
+
+            # Files
+            "photo": user.photo,
+
+            # Fingerprint flags (safe)
+            "finger1": True if user.finger1 else False,
+            "finger2": True if user.finger2 else False,
+
+            # System
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "updated_at": user.updated_at.isoformat() if user.updated_at else None
+        }
+    })
