@@ -72,6 +72,7 @@ def create_user():
             chestNo=data.get("chestNo") or "",
             rollNo=roll,
             email=data.get("email") or "",
+            manual_create_date=data.get("manual_create_date") or None,
             age=data.get("age") or "",
             dateOfBirth=data.get("dateOfBirth") or None,
             mobileNumber=data.get("mobileNumber") or "",
@@ -172,6 +173,12 @@ def update_user(id):
 
         # ? Normal text fields update
         for key, value in data.items():
+            # ✔️ Skip date fields if frontend did not send valid date
+            if key in ["dateOfBirth", "manual_create_date"] and (
+                value is None or value.strip() == "" or value == "None"
+            ):
+                continue
+            
             if key not in ["finger1", "finger2"]:  # avoid overwrite raw binary
                 update_data[key] = value
 

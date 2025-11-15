@@ -27,7 +27,7 @@ class User(Document):
     pincode = StringField()
     trade = StringField()
     police_station = StringField()
-
+    manual_create_date = DateTimeField()
     # Physical details
     height = StringField()
     weight = StringField()
